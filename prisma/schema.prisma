@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  phoneNumber  String   @unique
+  name         String?
+  address     String?  // Aluthin add kala
+  email       String?
+  isVerified   Boolean  @default(false)
+  password    String?
+  isAdmin      Boolean  @default(false)
+  items        Item[]
+  savedItems   SavedItem[]
+  createdAt    DateTime @default(now())
+}
+
+model Category {
+  id       Int    @id @default(autoincrement())
+  name     String
+  slug     String @unique
+  iconUrl  String?
+  
+  items    Item[]
+}
+
+model Item {
+  id            String   @id @default(uuid())
+  title         String
+  description   String
+  pricePerDay   Float
+  depositAmount Float?
+  district      String?   // Aluthin add kala
+  subLocation   String?   // Aluthin add kala
+  location      String
+  imageUrls     String[]  // Multiple images store karanna array ekak
+  isAvailable     Boolean  @default(true)
+  status        String   @default("active")
+  isTopAd       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  categoryId    Int
+  category      Category @relation(fields: [categoryId], references: [id])
+  savedItems    SavedItem[]
+}
+
+model SavedItem {
+  id        String   @id @default(uuid())
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  itemId    String
+  item      Item     @relation(fields: [itemId], references: [id])
+
+  @@unique([userId, itemId])
+}
