@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Illamu.lk – Rental Marketplace Platform
 
-## Getting Started
+Welcome to the official repository for **Illamu.lk**, a modern, scalable, and secure peer-to-peer and business rental marketplace platform designed to connect renters and item owners seamlessly.
 
-First, run the development server:
+🌐 **Live Website:** [illamu-rental-marketplace.vercel.app](https://illamu-rental-marketplace.vercel.app/)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 📱 About Illamu.lk
+
+Illamu.lk is a cloud-powered web application that simplifies the rental process. It enables users to easily list items, browse diverse categories, filter items by specific locations/districts, and securely manage their rental needs all in one place.
+
+## ✨ Core Features
+
+- **Item Management:** Post, update, and manage rental ads with detailed descriptions and categories.
+- **Smart Filtering:** Filter available items seamlessly by category, district, and sub-location.
+- **User Authentication:** Secure user sign-up and sign-in functionality.
+- **Responsive UI:** Modern, mobile-friendly interface styled with Tailwind CSS.
+- **Cloud Database:** Robust data handling via PostgreSQL and Supabase.
+
+## 🛠️ Tech Stack
+
+| Layer              | Technology                        |
+| :----------------- | :-------------------------------- |
+| **Framework**      | Next.js (App Router), TypeScript  |
+| **Styling**        | Tailwind CSS                      |
+| **Database & ORM** | Supabase (PostgreSQL), Prisma ORM |
+| **Authentication** | NextAuth.js                       |
+| **Deployment**     | Vercel                            |
+
+## 🚀 Getting Started Locally
+
+To run this project locally on your machine, follow these steps:
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/PramodikaDulanja/illamu-rental-marketplace.git
+   cd illamu-rental-marketplace
+   ```
+
+### 2. Install Dependencies
+
+```insstall
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Configure Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create a `.env` file in the root directory and add the following environment variables:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+DATABASE_URL="your_supabase_pooler_url"
+DIRECT_URL="your_supabase_direct_url"
+NEXT_PUBLIC_SUPABASE_URL="your_supabase_project_url"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your_supabase_anon_key"
+```
 
-## Learn More
+4. Run the Development Server
 
-To learn more about Next.js, take a look at the following resources:
+```
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
