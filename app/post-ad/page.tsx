@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
-import { Upload, X, Sparkles, MapPin, Tag, DollarSign, FileText, Image as ImageIcon, ShieldCheck } from 'lucide-react';
+import { Upload, X, Sparkles, MapPin, Tag, DollarSign, FileText, Image as ImageIcon, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,6 +25,19 @@ export default function PostAdPage() {
   const [error, setError] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   
+  // Custom Confirmation Modal සඳහා states
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -38,8 +52,10 @@ export default function PostAdPage() {
   useEffect(() => {
     const storedUserId = localStorage.getItem('userId');
     if (!storedUserId) {
-      alert('Please sign up or log in first!');
-      router.push('/signup');
+      toast.error('Please sign up or log in first!', { duration: 2000 });
+      setTimeout(() => {
+        router.push('/signup');
+      }, 1000);
     } else {
       setFormData((prev) => ({ ...prev, userId: storedUserId }));
     }
@@ -56,7 +72,7 @@ export default function PostAdPage() {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
       if (imageFiles.length + selectedFiles.length > 5) {
-        alert('You can only upload a maximum of 5 images.');
+        toast.error('You can only upload a maximum of 5 images.', { duration: 2000 });
         return;
       }
       setImageFiles((prev) => [...prev, ...selectedFiles]);
@@ -67,70 +83,82 @@ export default function PostAdPage() {
     setImageFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmitClick = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
 
-    try {
-      const uploadedImageUrls: string[] = [];
-      
-      for (const file of imageFiles) {
-        const fileName = `${Date.now()}-${file.name}`;
-        const { data, error: uploadError } = await supabase.storage
-          .from('item-images')
-          .upload(fileName, file);
+    setConfirmModal({
+      show: true,
+      title: 'Publish Ad Confirmation',
+      message: 'Are you sure you want to publish this rental ad?',
+      onConfirm: async () => {
+        setLoading(true);
+        setError('');
 
-        if (uploadError) {
-          throw new Error('Image upload failed: ' + uploadError.message);
+        try {
+          const uploadedImageUrls: string[] = [];
+          
+          for (const file of imageFiles) {
+            const fileName = `${Date.now()}-${file.name}`;
+            const { data, error: uploadError } = await supabase.storage
+              .from('item-images')
+              .upload(fileName, file);
+
+            if (uploadError) {
+              throw new Error('Image upload failed: ' + uploadError.message);
+            }
+
+            const { data: publicUrlData } = supabase.storage
+              .from('item-images')
+              .getPublicUrl(fileName);
+
+            uploadedImageUrls.push(publicUrlData.publicUrl);
+          }
+
+          const itemData = {
+            title: formData.title,
+            description: formData.description,
+            pricePerDay: Number(formData.pricePerDay),
+            depositAmount: formData.depositAmount ? Number(formData.depositAmount) : null,
+            district: formData.district,
+            subLocation: formData.subLocation,
+            location: `${formData.district} - ${formData.subLocation}`,
+            imageUrls: uploadedImageUrls,
+            userId: formData.userId,
+            categoryId: Number(formData.categoryId),
+          };
+
+          const response = await fetch('/api/items', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(itemData),
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            toast.success('Ad posted successfully!', { duration: 2000 });
+            setTimeout(() => {
+              router.push('/');
+            }, 1000);
+          } else {
+            setError(result.error || 'Something went wrong');
+            toast.error(result.error || 'Something went wrong', { duration: 2000 });
+          }
+        } catch (err: any) {
+          console.error('Failed to post ad:', err);
+          setError(err.message || 'Failed to post ad.');
+          toast.error(err.message || 'Failed to post ad.', { duration: 2000 });
+        } finally {
+          setLoading(false);
         }
-
-        const { data: publicUrlData } = supabase.storage
-          .from('item-images')
-          .getPublicUrl(fileName);
-
-        uploadedImageUrls.push(publicUrlData.publicUrl);
-      }
-
-      const itemData = {
-        title: formData.title,
-        description: formData.description,
-        pricePerDay: Number(formData.pricePerDay),
-        depositAmount: formData.depositAmount ? Number(formData.depositAmount) : null,
-        district: formData.district,
-        subLocation: formData.subLocation,
-        location: `${formData.district} - ${formData.subLocation}`,
-        imageUrls: uploadedImageUrls,
-        userId: formData.userId,
-        categoryId: Number(formData.categoryId),
-      };
-
-      const response = await fetch('/api/items', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(itemData),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        alert('Ad posted successfully!');
-        router.push('/');
-      } else {
-        setError(result.error || 'Something went wrong');
-      }
-    } catch (err: any) {
-      console.error('Failed to post ad:', err);
-      setError(err.message || 'Failed to post ad.');
-    } finally {
-      setLoading(false);
-    }
+      },
+    });
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 text-slate-800">
+    <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 text-slate-800 relative">
       
       {/* Header Banner */}
       <div className="mb-8 text-center space-y-2">
@@ -147,7 +175,7 @@ export default function PostAdPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 sm:p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
+      <form onSubmit={handleFormSubmitClick} className="space-y-6 bg-white p-6 sm:p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
         
         {/* Basic Information */}
         <div className="space-y-4">
@@ -328,6 +356,42 @@ export default function PostAdPage() {
         </div>
 
       </form>
+
+      {/* Professional Yes / No Custom Confirmation Modal */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4 border border-slate-100 animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold shadow-inner">
+              <AlertTriangle className="w-6 h-6 text-amber-600" />
+            </div>
+            
+            <div className="space-y-1">
+              <h3 className="text-lg font-black text-slate-900">{confirmModal.title}</h3>
+              <p className="text-slate-500 text-xs font-medium px-2">{confirmModal.message}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal({ show: false, title: '', message: '', onConfirm: () => {} })}
+                className="w-full py-3 rounded-2xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                No
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal({ show: false, title: '', message: '', onConfirm: () => {} });
+                }}
+                className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md hover:shadow-indigo-500/25 transition-all"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
