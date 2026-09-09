@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PlusCircle, LogIn, User } from 'lucide-react';
 
 export default function Navbar() {
   const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
-    // Client side eke witharak localStorage eken data read kirima
     const name = localStorage.getItem('userName');
     if (name) {
       setUserName(name);
@@ -16,48 +16,57 @@ export default function Navbar() {
   }, []);
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-100 px-6 py-2 sticky top-0 z-50">
-      <div className="max-w-5xl mx-auto flex justify-between items-center">
-        {/* Logo Eka */}
-        <Link href="/" className="flex items-center gap-2 text-2xl font-bold text-blue-900 tracking-tight">
-          <img src="/images/logo2.png" alt="Illamu.lk Logo" className="w-28 object-contain" />
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm transition-all">
+      <nav className="max-w-6xl mx-auto px-6 h-20 flex justify-between items-center">
+        
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="relative">
+            <img 
+              src="/images/logo2.png" 
+              alt="Illamu.lk Logo" 
+              className="w-32 object-contain transition-transform duration-300 group-hover:scale-105" 
+            />
+          </div>
         </Link>
-        {/* <span>Illamu<span className="text-blue-500">.lk</span></span> */}
-       
 
-        {/* Buttons Tika / User Profile */}
-        <div className="flex items-center gap-4">
+        {/* Right Action Buttons */}
+        <div className="flex items-center gap-3.5">
+          
+          {/* Post Ad Button */}
           <Link 
             href="/post-ad" 
-            className="bg-blue-900 text-white px-5 py-2 rounded-full font-medium hover:bg-blue-800 transition-colors shadow-sm"
+            className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white px-5 py-2.5 rounded-full font-semibold text-sm transition-all shadow-md hover:shadow-indigo-500/25 active:scale-95"
           >
-            + Post Ad
+            <PlusCircle className="w-4 h-4 transition-transform group-hover:rotate-90 duration-300" />
+            <span>Post Ad</span>
           </Link>
           
           {userName ? (
-            <Link href="/profile" className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-2 py-1.5 rounded-full shadow-sm hover:bg-gray-100 transition-colors">
-              <Avatar className="w-8 h-8">
+            <Link 
+              href="/profile" 
+              className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 p-2 rounded-full shadow-sm hover:bg-slate-100 hover:border-slate-300 transition-all group"
+              title={userName}
+            >
+              <Avatar className="w-8 h-8 ring-2 ring-indigo-500/20 group-hover:ring-indigo-500/40 transition-all">
                 <AvatarImage src="" />
-                <AvatarFallback className="bg-blue-800 text-white font-bold text-xs">
+                <AvatarFallback className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white font-bold text-xs">
                   {userName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              {/* <span className="font-semibold text-gray-800 text-sm">
-                {userName}
-              </span> */}
             </Link>
           ) : (
             <Link 
               href="/signin" 
-              className="bg-gray-100 text-blue-900 border border-blue-900 px-4 py-2 rounded-full font-medium hover:bg-blue-50 transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 bg-slate-50 hover:bg-indigo-50 text-indigo-900 border border-indigo-100 hover:border-indigo-200 px-5 py-2.5 rounded-full font-semibold text-sm transition-all shadow-sm"
             >
-              Sign in
+              <LogIn className="w-4 h-4 text-indigo-600" />
+              <span>Sign in</span>
             </Link>
           )}
 
-          
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 }
