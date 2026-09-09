@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signupAction } from './actions'
+import { toast } from 'sonner'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -19,15 +20,15 @@ export default function SignupPage() {
       const result = await signupAction(formData)
 
       if (result.success) {
-        alert('Account created successfully! Please sign in.')
+        toast.success('Account created successfully! Please sign in.') // Professional Toast
         router.push('/signin')
         router.refresh()
       } else {
-        alert('Error: ' + result.error)
+        toast.error('Error: ' + result.error) // Professional Error Toast
       }
     } catch (err) {
       console.error(err)
-      alert('Something went wrong')
+      toast.error('Something went wrong')
     } finally {
       setLoading(false)
     }

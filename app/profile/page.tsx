@@ -1,14 +1,29 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Phone, ShieldCheck, Package, LogOut, Trash2, Edit, MapPin, Mail, X, UserCheck, Sparkles } from 'lucide-react';
+import { Phone, ShieldCheck, Package, LogOut, Trash2, Edit, MapPin, Mail, X, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Custom Confirmation Modal සඳහා states
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
   const [editForm, setEditForm] = useState({
     name: '',
     phoneNumber: '',
@@ -54,60 +69,88 @@ export default function ProfilePage() {
       });
   }, [userId]);
 
+  // Log Out Confirmation Trigger
   const handleLogout = () => {
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userName');
-    window.location.href = '/';
+    setConfirmModal({
+      show: true,
+      title: 'Log Out Confirmation',
+      message: 'Are you sure you want to log out of your account?',
+      onConfirm: () => {
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('isAdmin');
+        toast.success('Logged out successfully!', { duration: 2000 });
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+      },
+    });
   };
 
+  // Delete Item Confirmation Trigger
   const handleDeleteItem = async (itemId: string, e: React.MouseEvent) => {
     e.preventDefault();
-    if (!confirm('Are you sure you want to delete this ad?')) return;
+    
+    setConfirmModal({
+      show: true,
+      title: 'Delete Ad Confirmation',
+      message: 'Are you sure you want to delete this ad permanently? This action cannot be undone.',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/items/${itemId}`, {
+            method: 'DELETE',
+          });
+          const data = await res.json();
 
-    try {
-      const res = await fetch(`/api/items/${itemId}`, {
-        method: 'DELETE',
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        setUser((prevUser: any) => ({
-          ...prevUser,
-          items: prevUser.items.filter((item: any) => item.id !== itemId)
-        }));
-        alert('Ad deleted successfully!');
-      } else {
-        alert('Error: ' + data.error);
-      }
-    } catch (error) {
-      console.error('Error deleting ad:', error);
-      alert('Something went wrong');
-    }
+          if (data.success) {
+            setUser((prevUser: any) => ({
+              ...prevUser,
+              items: prevUser.items.filter((item: any) => item.id !== itemId)
+            }));
+            toast.success('Ad deleted successfully!', { duration: 2000 });
+          } else {
+            toast.error('Error: ' + data.error, { duration: 2000 });
+          }
+        } catch (error) {
+          console.error('Error deleting ad:', error);
+          toast.error('Something went wrong while deleting the ad.', { duration: 2000 });
+        }
+      },
+    });
   };
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
+  // Profile Update Trigger (Edit Profile Confirmation)
+  const handleUpdateProfileClick = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const res = await fetch(`/api/users/${userId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
-      });
-      const data = await res.json();
 
-      if (res.ok) {
-        setUser((prev: any) => ({ ...prev, ...editForm }));
-        localStorage.setItem('userName', editForm.name);
-        setIsEditing(false);
-        alert('Profile updated successfully!');
-        router.refresh();
-      } else {
-        alert('Error: ' + (data.error || 'Failed to update profile'));
-      }
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      alert('Something went wrong');
-    }
+    setConfirmModal({
+      show: true,
+      title: 'Update Profile Confirmation',
+      message: 'Are you sure you want to save these changes to your profile?',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/users/${userId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(editForm),
+          });
+          const data = await res.json();
+
+          if (res.ok) {
+            setUser((prev: any) => ({ ...prev, ...editForm }));
+            localStorage.setItem('userName', editForm.name);
+            setIsEditing(false);
+            toast.success('Profile updated successfully!', { duration: 2000 });
+            router.refresh();
+          } else {
+            toast.error('Error: ' + (data.error || 'Failed to update profile'), { duration: 2000 });
+          }
+        } catch (error) {
+          console.error('Error updating profile:', error);
+          toast.error('Something went wrong while updating profile.', { duration: 2000 });
+        }
+      },
+    });
   };
 
   if (loading) {
@@ -140,7 +183,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 text-slate-800">
+    <main className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 text-slate-800 relative">
       <div className="max-w-5xl mx-auto space-y-8">
         
         {/* User Info Card & Actions */}
@@ -215,7 +258,7 @@ export default function ProfilePage() {
               
               <h2 className="text-xl font-black text-slate-900 mb-6">Edit Profile</h2>
               
-              <form onSubmit={handleUpdateProfile} className="space-y-4">
+              <form onSubmit={handleUpdateProfileClick} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Name</label>
                   <input
@@ -331,16 +374,28 @@ export default function ProfilePage() {
 
                   <div className="p-5 pt-0 space-y-2 mt-auto">
                     <button
-                      onClick={async () => {
-                        const res = await fetch(`/api/items/${item.id}`, {
-                          method: 'PUT',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ isAvailable: item.isAvailable === false ? true : false })
+                      onClick={() => {
+                        const newStatus = item.isAvailable === false ? true : false;
+                        setConfirmModal({
+                          show: true,
+                          title: 'Update Availability Status',
+                          message: `Are you sure you want to mark this item as ${newStatus ? 'Available' : 'Rented Out'}?`,
+                          onConfirm: async () => {
+                            const res = await fetch(`/api/items/${item.id}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ isAvailable: newStatus })
+                            });
+                            if (res.ok) {
+                              toast.success(newStatus ? 'Item marked as Available!' : 'Item marked as Rented Out!', { duration: 2000 });
+                              setTimeout(() => {
+                                window.location.reload();
+                              }, 1500);
+                            } else {
+                              toast.error('Failed to update status', { duration: 2000 });
+                            }
+                          }
                         });
-                        if (res.ok) {
-                          alert('Status updated successfully!');
-                          window.location.reload();
-                        }
                       }}
                       className={`w-full py-2.5 rounded-2xl text-xs font-bold transition-all border ${
                         item.isAvailable !== false 
@@ -352,13 +407,22 @@ export default function ProfilePage() {
                     </button>
 
                     <div className="grid grid-cols-2 gap-2">
-                      <Link
-                        href={`/items/${item.id}/edit`}
-                        onClick={(e) => e.stopPropagation()}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setConfirmModal({
+                            show: true,
+                            title: 'Edit Ad Confirmation',
+                            message: 'Are you sure you want to edit this ad details?',
+                            onConfirm: () => {
+                              router.push(`/items/${item.id}/edit`);
+                            },
+                          });
+                        }}
                         className="flex items-center justify-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 py-2 rounded-xl text-xs font-bold transition-colors border border-indigo-100"
                       >
                         <Edit className="w-3.5 h-3.5" /> Edit
-                      </Link>
+                      </button>
 
                       <button
                         onClick={(e) => handleDeleteItem(item.id, e)}
@@ -375,6 +439,43 @@ export default function ProfilePage() {
         </div>
 
       </div>
+
+      {/* Professional Yes / No Custom Confirmation Modal */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4 border border-slate-100 animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold shadow-inner">
+              <AlertTriangle className="w-6 h-6 text-amber-600" />
+            </div>
+            
+            <div className="space-y-1">
+              <h3 className="text-lg font-black text-slate-900">{confirmModal.title}</h3>
+              <p className="text-slate-500 text-xs font-medium px-2">{confirmModal.message}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal({ show: false, title: '', message: '', onConfirm: () => {} });
+                }}
+                className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md hover:shadow-indigo-300 transition-all"
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmModal({ show: false, title: '', message: '', onConfirm: () => {} })}
+                className="w-full py-3 rounded-2xl bg-indigo-100 border border-slate-200 text-xs font-bold text-slate-700 hover:bg-indigo-300 transition-colors"
+              >
+                No
+              </button>
+            
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

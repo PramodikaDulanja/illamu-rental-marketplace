@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 export default function SigninPage() {
   const router = useRouter()
@@ -26,18 +27,23 @@ export default function SigninPage() {
       if (data.success) {
         localStorage.setItem('userId', data.data.id)
         localStorage.setItem('userName', data.data.name)
-        localStorage.setItem('isAdmin', data.data.isAdmin);
+        localStorage.setItem('isAdmin', data.data.isAdmin)
 
-        alert('Login successful!')
-        window.location.href = '/'
-        router.refresh()
+        // වඩාත් පැහැදිලිව සහ ලස්සනට පෙන්වීම සඳහා 
+        toast.success(`🎉 Welcome back, ${data.data.name}! Login successful.`)
+
+        // නොටිෆිකේෂන් එක හොඳින් බලාගת පසු හෝම් පේජ් එකට යාමට තත්පර 1.2ක ඉඩක් ලබා දීම
+        setTimeout(() => {
+          window.location.href = '/'
+        }, 2000)
+
       } else {
-        alert('Error: ' + (data.error || 'Invalid credentials'))
+        toast.error('Error: ' + (data.error || 'Invalid credentials'))
+        setLoading(false)
       }
     } catch (err) {
       console.error(err)
-      alert('Something went wrong')
-    } finally {
+      toast.error('Something went wrong. Please try again.')
       setLoading(false)
     }
   }
