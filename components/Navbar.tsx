@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PlusCircle, LogIn, User } from 'lucide-react';
+import { PlusCircle, LogIn } from 'lucide-react';
 
 export default function Navbar() {
   const [userName, setUserName] = useState<string | null>(null);
@@ -16,16 +16,16 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm transition-all">
+    <header className="sticky top-0 z-50 bg-white backdrop-blur-md border-b border-slate-100 shadow-sm transition-all">
       <nav className="max-w-6xl mx-auto px-6 h-20 flex justify-between items-center">
         
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="relative">
+        {/* Logo - Background එක නැති කරලා clean පෙනුමක් ලබා දීමට */}
+        <Link href="/" className="flex items-center gap-2 group py-2">
+          <div className="h-10 flex items-center overflow-hidden">
             <img 
               src="/images/logo2.png" 
               alt="Illamu.lk Logo" 
-              className="w-32 object-contain transition-transform duration-300 group-hover:scale-105" 
+              className="h-full w-auto object-contain transition-transform duration-300 group-hover:scale-105 mix-blend-multiply" 
             />
           </div>
         </Link>
