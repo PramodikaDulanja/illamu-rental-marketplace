@@ -36,6 +36,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!userId) {
+      document.title = 'My Profile | Illamu.lk';
       setLoading(false);
       return;
     }
@@ -52,20 +53,25 @@ export default function ProfilePage() {
             address: userData.address || '',
             email: userData.email || '',
           });
+          // 🗂️ ඩේටා ෆෙච් වුණු ගමන් යූසර්ගේ නම සමඟ බ්‍රව්සර් ටැබ් එකේ නම අප්ඩේට් වේ
+          document.title = `${userData.name || 'User'} | Profile - Illamu.lk`;
         } else {
+          const fallbackName = localStorage.getItem('userName') || 'User';
           setUser({
-            name: localStorage.getItem('userName') || 'User',
+            name: fallbackName,
             phoneNumber: 'Not Available',
             address: 'Not Available',
             email: 'Not Available',
             items: [],
           });
+          document.title = `${fallbackName} | Profile - Illamu.lk`;
         }
         setLoading(false);
       })
       .catch((err) => {
         console.error('Error fetching profile data:', err);
         setLoading(false);
+        document.title = 'My Profile | Illamu.lk';
       });
   }, [userId]);
 
@@ -140,6 +146,7 @@ export default function ProfilePage() {
             setUser((prev: any) => ({ ...prev, ...editForm }));
             localStorage.setItem('userName', editForm.name);
             setIsEditing(false);
+            document.title = `${editForm.name || 'User'} | Profile - Illamu.lk`;
             toast.success('Profile updated successfully!', { duration: 2000 });
             router.refresh();
           } else {
@@ -471,7 +478,6 @@ export default function ProfilePage() {
               >
                 No
               </button>
-            
             </div>
           </div>
         </div>

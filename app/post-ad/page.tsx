@@ -50,6 +50,9 @@ export default function PostAdPage() {
   });
 
   useEffect(() => {
+    // 🗂️ බ්‍රව්සර් ටැබ් එකේ නම Post Ad පිටුවට අදාළව වෙනස් කිරීම
+    document.title = 'Post Your Rental Ad | Illamu.lk';
+
     const storedUserId = localStorage.getItem('userId');
     if (!storedUserId) {
       toast.error('Please sign up or log in first!', { duration: 2000 });
