@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trash2, Upload } from 'lucide-react'
+import { Trash2, Upload, ArrowLeft } from 'lucide-react'
 
 export default function EditAdPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
@@ -21,12 +21,11 @@ export default function EditAdPage({ params }: { params: Promise<{ id: string }>
     district: '',
     subLocation: '',
     location: '',
-    categoryId: '', // Category සඳහා
+    categoryId: '', 
     imageUrls: [] as string[],
   })
 
   useEffect(() => {
-    // Categories සහ Item details එකවර fetch කරගැනීම
     Promise.all([
       fetch('/api/categories').then((res) => res.json()).catch(() => ({ success: false })),
       fetch('/api/items').then((res) => res.json())
@@ -258,13 +257,24 @@ export default function EditAdPage({ params }: { params: Promise<{ id: string }>
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={saving || formData.imageUrls.length === 0}
-          className="w-full bg-blue-900 text-white py-3 rounded-lg font-medium hover:bg-blue-800 transition-colors disabled:opacity-50"
-        >
-          {saving ? 'Updating...' : 'Update Ad'}
-        </button>
+        {/* Action Buttons: Update and Cancel */}
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            type="submit"
+            disabled={saving || formData.imageUrls.length === 0}
+            className="flex-1 bg-blue-900 text-white py-3 rounded-lg font-medium hover:bg-blue-800 transition-colors disabled:opacity-50"
+          >
+            {saving ? 'Updating...' : 'Update Ad'}
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => router.push('/profile')}
+            className="flex-1 bg-gray-100 text-gray-700 border border-gray-300 py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" /> Cancel
+          </button>
+        </div>
       </form>
     </div>
   )

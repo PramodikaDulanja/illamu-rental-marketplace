@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { MapPin, Phone, MessageCircle, ShieldCheck, User, ArrowLeft, Sparkles, Tag, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { MapPin, Phone, MessageCircle, ShieldCheck, User, ArrowLeft, Sparkles, Tag, CheckCircle2, AlertCircle, Clock, Edit } from 'lucide-react';
 import Link from 'next/link';
 
 interface Owner {
+  id?: string;
   name: string;
   phoneNumber?: string;
 }
@@ -20,6 +21,7 @@ interface Item {
   imageUrls: string[];
   isAvailable?: boolean;
   createdAt?: string;
+  userId?: string;
   user: Owner;
 }
 
@@ -30,8 +32,14 @@ export default function ItemDetails() {
   const [item, setItem] = useState<Item | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState<string>('');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
+    // ලොග් වී සිටින යූසර්ගේ ID එක ලබා ගැනීම
+    if (typeof window !== 'undefined') {
+      setCurrentUserId(localStorage.getItem('userId'));
+    }
+
     if (!id) return;
 
     fetch(`/api/items/${id}`)
@@ -96,6 +104,9 @@ export default function ItemDetails() {
   }
 
   const isNotAvailable = item.isAvailable === false;
+  
+  // යූසර් ලොග් වී සිටින්නේ මෙම දැන්වීමේ අයිතිකරු ලෙස දැයි පරීක්ෂා කිරීම
+  const isOwner = currentUserId && (item.userId === currentUserId || item.user?.id === currentUserId);
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-800 py-10 px-4 sm:px-6">
@@ -229,7 +240,7 @@ export default function ItemDetails() {
               </div>
             </div>
 
-            {/* Owner Section & Action Buttons (Phone Number always visible) */}
+            {/* Owner Section & Action Buttons (Conditional Rendering based on isOwner) */}
             <div className="pt-6 border-t border-slate-100 space-y-5">
               <div className="flex items-center justify-between bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
                 <div className="flex items-center gap-3 overflow-hidden">
@@ -237,14 +248,16 @@ export default function ItemDetails() {
                     {item.user?.name ? item.user.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
                   </div>
                   <div className="overflow-hidden">
-                    <p className="font-bold text-slate-900 text-sm truncate">{item.user?.name || 'Owner'}</p>
+                    <p className="font-bold text-slate-900 text-sm truncate">
+                      {item.user?.name || 'Owner'} {isOwner && <span className="text-indigo-600 text-xs font-extrabold">(You)</span>}
+                    </p>
                     <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
-                      <ShieldCheck className="w-3.5 h-3.5" /> Verified Owner
+                      <ShieldCheck className="w-3.5 h-3.5" /> {isOwner ? 'Your Listing' : 'Verified Owner'}
                     </p>
                   </div>
                 </div>
-                {/* මෙහි අයිතිකරුගේ දුරකථන අංකය දිස් වේ */}
-                {item.user?.phoneNumber && (
+                
+                {!isOwner && item.user?.phoneNumber && (
                   <div className="text-right pl-2">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Contact No</span>
                     <a href={`tel:${item.user.phoneNumber}`} className="text-xs sm:text-sm font-extrabold text-indigo-900 hover:underline">
@@ -254,44 +267,67 @@ export default function ItemDetails() {
                 )}
               </div>
 
-              {isNotAvailable && (
-                <div className="w-full bg-rose-50 text-rose-600 py-2.5 rounded-xl font-bold text-xs text-center border border-rose-100">
-                  Note: This item is currently marked as Rented Out, but you can still contact the owner.
+              {/* අයිතිකරු නම් Call බටන් වෙනුවට Manage/Edit බටන් පෙන්වීම, වෙනත් අයෙකු නම් සාමාන්‍ය පරිදි Call/WhatsApp පෙන්වීම */}
+              {isOwner ? (
+                <div className="space-y-3">
+                  <div className="w-full bg-indigo-50 border border-indigo-100 py-2.5 px-4 rounded-2xl text-center">
+                    <p className="text-xs font-bold text-indigo-900">This is your own ad listing.</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link
+                      href={`/items/${item.id}/edit`}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md"
+                    >
+                      <Edit className="w-4 h-4" /> Edit Ad
+                    </Link>
+                    <Link
+                      href="/profile"
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 px-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all border border-slate-200"
+                    >
+                      Manage in Profile
+                    </Link>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  {isNotAvailable && (
+                    <div className="w-full bg-rose-50 text-rose-600 py-2.5 rounded-xl font-bold text-xs text-center border border-rose-100">
+                      Note: This item is currently marked as Rented Out, but you can still contact the owner.
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <a
+                      href={`tel:${item.user?.phoneNumber || ''}`}
+                      className="bg-indigo-900 hover:bg-indigo-800 text-white py-3 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-indigo-900/25 active:scale-95"
+                    >
+                      <Phone className="w-4 h-4" /> Call Now
+                    </a>
+                    {(() => {
+                      const rawPhone = item.user?.phoneNumber || '';
+                      let cleaned = rawPhone.replace(/\D/g, '');
+                      if (cleaned.startsWith('0')) {
+                        cleaned = '94' + cleaned.slice(1);
+                      } else if (!cleaned.startsWith('94') && cleaned.length === 9) {
+                        cleaned = '94' + cleaned;
+                      }
+                      const msg = encodeURIComponent(`Hi ${item.user?.name || 'Owner'}, I am interested in your item "${item.title}" on Illamu.lk.`);
+                      
+                      return (
+                        <a
+                          href={cleaned ? `https://wa.me/${cleaned}?text=${msg}` : '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-emerald-600/25 active:scale-95"
+                        >
+                          <MessageCircle className="w-4 h-4" /> WhatsApp
+                        </a>
+                      );
+                    })()}
+                  </div>
+                </>
               )}
 
-              {/* Call & WhatsApp Buttons (රෙන්ට් අවුට් වුවද අංකය බලා කතා කිරීමට හැක) */}
-              <div className="grid grid-cols-2 gap-3">
-                <a
-                  href={`tel:${item.user?.phoneNumber || ''}`}
-                  className="bg-indigo-900 hover:bg-indigo-800 text-white py-3 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-indigo-900/25 active:scale-95"
-                >
-                  <Phone className="w-4 h-4" /> Call Now
-                </a>
-                {(() => {
-                  const rawPhone = item.user?.phoneNumber || '';
-                  let cleaned = rawPhone.replace(/\D/g, '');
-                  if (cleaned.startsWith('0')) {
-                    cleaned = '94' + cleaned.slice(1);
-                  } else if (!cleaned.startsWith('94') && cleaned.length === 9) {
-                    cleaned = '94' + cleaned;
-                  }
-                  const msg = encodeURIComponent(`Hi ${item.user?.name || 'Owner'}, I am interested in your item "${item.title}" on Illamu.lk.`);
-                  
-                  return (
-                    <a
-                      href={cleaned ? `https://wa.me/${cleaned}?text=${msg}` : '#'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-emerald-600/25 active:scale-95"
-                    >
-                      <MessageCircle className="w-4 h-4" /> WhatsApp
-                    </a>
-                  );
-                })()}
-              </div>
-
-              
             </div>
 
           </div>
