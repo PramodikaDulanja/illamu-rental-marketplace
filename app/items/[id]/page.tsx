@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { MapPin, Phone, MessageCircle, ShieldCheck, User, ArrowLeft, Sparkles, Tag, CheckCircle2, AlertCircle } from 'lucide-react';
+import { MapPin, Phone, MessageCircle, ShieldCheck, User, ArrowLeft, Sparkles, Tag, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 interface Owner {
@@ -19,6 +19,7 @@ interface Item {
   location: string;
   imageUrls: string[];
   isAvailable?: boolean;
+  createdAt?: string;
   user: Owner;
 }
 
@@ -49,6 +50,19 @@ export default function ItemDetails() {
         setLoading(false);
       });
   }, [id]);
+
+  const formatPostedDate = (dateString?: string) => {
+    if (!dateString) return 'Recently';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    }) + ' at ' + date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
 
   if (loading) {
     return (
@@ -151,11 +165,20 @@ export default function ItemDetails() {
           <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               
-              {/* Title & Category Badge */}
-              <div>
-                <div className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full mb-3 uppercase tracking-wider">
+              {/* Category Badge & Posted Date/Time */}
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wider">
                   <Tag className="w-3 h-3" /> Verified Listing
                 </div>
+                
+                <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
+                  <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Posted on {formatPostedDate(item.createdAt)}</span>
+                </div>
+              </div>
+
+              {/* Title */}
+              <div>
                 <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-snug">
                   {item.title}
                 </h1>
@@ -206,55 +229,69 @@ export default function ItemDetails() {
               </div>
             </div>
 
-            {/* Owner Section & Action Buttons */}
+            {/* Owner Section & Action Buttons (Phone Number always visible) */}
             <div className="pt-6 border-t border-slate-100 space-y-5">
-              <div className="flex items-center gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-600 to-blue-700 flex items-center justify-center text-white shadow-md flex-shrink-0 font-bold">
-                  {item.user?.name ? item.user.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+              <div className="flex items-center justify-between bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-600 to-blue-700 flex items-center justify-center text-white shadow-md flex-shrink-0 font-bold">
+                    {item.user?.name ? item.user.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="font-bold text-slate-900 text-sm truncate">{item.user?.name || 'Owner'}</p>
+                    <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Verified Owner
+                    </p>
+                  </div>
                 </div>
-                <div className="overflow-hidden">
-                  <p className="font-bold text-slate-900 text-sm truncate">{item.user?.name || 'Owner'}</p>
-                  <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Verified Owner
-                  </p>
-                </div>
+                {/* මෙහි අයිතිකරුගේ දුරකථන අංකය දිස් වේ */}
+                {item.user?.phoneNumber && (
+                  <div className="text-right pl-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Contact No</span>
+                    <a href={`tel:${item.user.phoneNumber}`} className="text-xs sm:text-sm font-extrabold text-indigo-900 hover:underline">
+                      {item.user.phoneNumber}
+                    </a>
+                  </div>
+                )}
               </div>
 
-              {!isNotAvailable ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <a
-                    href={`tel:${item.user?.phoneNumber || ''}`}
-                    className="bg-indigo-900 hover:bg-indigo-800 text-white py-3 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-indigo-900/25 active:scale-95"
-                  >
-                    <Phone className="w-4 h-4" /> Call Now
-                  </a>
-                  {(() => {
-                    const rawPhone = item.user?.phoneNumber || '';
-                    let cleaned = rawPhone.replace(/\D/g, '');
-                    if (cleaned.startsWith('0')) {
-                      cleaned = '94' + cleaned.slice(1);
-                    } else if (!cleaned.startsWith('94') && cleaned.length === 9) {
-                      cleaned = '94' + cleaned;
-                    }
-                    const msg = encodeURIComponent(`Hi ${item.user?.name || 'Owner'}, I am interested in renting your item "${item.title}" on Illamu.lk.`);
-                    
-                    return (
-                      <a
-                        href={cleaned ? `https://wa.me/${cleaned}?text=${msg}` : '#'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-emerald-600/25 active:scale-95"
-                      >
-                        <MessageCircle className="w-4 h-4" /> WhatsApp
-                      </a>
-                    );
-                  })()}
-                </div>
-              ) : (
-                <div className="w-full bg-slate-100 text-slate-400 py-3.5 rounded-2xl font-bold text-sm text-center border border-slate-200">
-                  Currently Rented Out
+              {isNotAvailable && (
+                <div className="w-full bg-rose-50 text-rose-600 py-2.5 rounded-xl font-bold text-xs text-center border border-rose-100">
+                  Note: This item is currently marked as Rented Out, but you can still contact the owner.
                 </div>
               )}
+
+              {/* Call & WhatsApp Buttons (රෙන්ට් අවුට් වුවද අංකය බලා කතා කිරීමට හැක) */}
+              <div className="grid grid-cols-2 gap-3">
+                <a
+                  href={`tel:${item.user?.phoneNumber || ''}`}
+                  className="bg-indigo-900 hover:bg-indigo-800 text-white py-3 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-indigo-900/25 active:scale-95"
+                >
+                  <Phone className="w-4 h-4" /> Call Now
+                </a>
+                {(() => {
+                  const rawPhone = item.user?.phoneNumber || '';
+                  let cleaned = rawPhone.replace(/\D/g, '');
+                  if (cleaned.startsWith('0')) {
+                    cleaned = '94' + cleaned.slice(1);
+                  } else if (!cleaned.startsWith('94') && cleaned.length === 9) {
+                    cleaned = '94' + cleaned;
+                  }
+                  const msg = encodeURIComponent(`Hi ${item.user?.name || 'Owner'}, I am interested in your item "${item.title}" on Illamu.lk.`);
+                  
+                  return (
+                    <a
+                      href={cleaned ? `https://wa.me/${cleaned}?text=${msg}` : '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-emerald-600/25 active:scale-95"
+                    >
+                      <MessageCircle className="w-4 h-4" /> WhatsApp
+                    </a>
+                  );
+                })()}
+              </div>
+
+              
             </div>
 
           </div>
