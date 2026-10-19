@@ -1,72 +1,193 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PlusCircle, LogIn } from 'lucide-react';
+import {
+  Plus,
+  LogIn,
+  UserRound,
+  Menu,
+  X,
+  Home,
+  UserCircle,
+} from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export default function Navbar() {
   const [userName, setUserName] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const name = localStorage.getItem('userName');
-    if (name) {
-      setUserName(name);
-    }
+    if (name) setUserName(name);
   }, []);
 
+  // Close menu when navigating
+  const closeMenu = () => setMenuOpen(false);
+
   return (
-    <header className="sticky top-0 z-50 bg-white backdrop-blur-md border-b border-slate-100 shadow-sm transition-all">
-      <nav className="max-w-6xl mx-auto px-6 h-20 flex justify-between items-center">
-        
-        {/* Logo - Background එක නැති කරලා clean පෙනුමක් ලබා දීමට */}
-        <Link href="/" className="flex items-center gap-2 group py-2">
-          <div className="h-10 flex items-center overflow-hidden">
-            <img 
-              src="/images/logo2.png" 
-              alt="Illamu.lk Logo" 
-              className="h-full w-auto object-contain transition-transform duration-300 group-hover:scale-105 mix-blend-multiply" 
-            />
-          </div>
+    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-xl">
+      <nav
+        className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:h-[76px] sm:px-6 lg:px-8"
+        aria-label="Main navigation"
+      >
+        {/* Logo */}
+        <Link
+          href="/"
+          onClick={closeMenu}
+          aria-label="Illamu.lk home"
+          className="flex shrink-0 items-center"
+        >
+          <img
+            src="/images/logo2.png"
+            alt="Illamu.lk"
+            className="h-10 w-auto object-contain sm:h-12"
+          />
         </Link>
 
-        {/* Right Action Buttons */}
-        <div className="flex items-center gap-3.5">
-          
-          {/* Post Ad Button */}
-          <Link 
-            href="/post-ad" 
-            className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white px-5 py-2.5 rounded-full font-semibold text-sm transition-all shadow-md hover:shadow-indigo-500/25 active:scale-95"
+        {/* Desktop actions */}
+        <div className="hidden items-center gap-3 sm:flex">
+          <Link
+            href="/post-ad"
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-md"
           >
-            <PlusCircle className="w-4 h-4 transition-transform group-hover:rotate-90 duration-300" />
-            <span>Post Ad</span>
+            <Plus className="h-[18px] w-[18px]" />
+            Post Ad
           </Link>
-          
+
           {userName ? (
-            <Link 
-              href="/profile" 
-              className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 p-2 rounded-full shadow-sm hover:bg-slate-100 hover:border-slate-300 transition-all group"
-              title={userName}
+            <Link
+              href="/profile"
+              title={`Profile: ${userName}`}
+              className="group flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white py-1 px-1 transition hover:border-indigo-200 hover:bg-indigo-50"
             >
-              <Avatar className="w-8 h-8 ring-2 ring-indigo-500/20 group-hover:ring-indigo-500/40 transition-all">
-                <AvatarImage src="" />
-                <AvatarFallback className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white font-bold text-xs">
-                  {userName.charAt(0).toUpperCase()}
+              <Avatar className="h-9 w-9">
+                <AvatarFallback className="bg-indigo-600 text-xs font-bold text-white">
+                  {userName.trim().charAt(0).toUpperCase() || (
+                    <UserRound className="h-4 w-4" />
+                  )}
                 </AvatarFallback>
               </Avatar>
+              
             </Link>
           ) : (
-            <Link 
-              href="/signin" 
-              className="inline-flex items-center gap-2 bg-slate-50 hover:bg-indigo-50 text-indigo-900 border border-indigo-100 hover:border-indigo-200 px-5 py-2.5 rounded-full font-semibold text-sm transition-all shadow-sm"
+            <Link
+              href="/signin"
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
             >
-              <LogIn className="w-4 h-4 text-indigo-600" />
-              <span>Sign in</span>
+              <LogIn className="h-4 w-4" />
+              Sign in
             </Link>
           )}
+        </div>
 
+        {/* Mobile actions */}
+        <div className="flex items-center gap-2 sm:hidden">
+          <Link
+            href="/post-ad"
+            aria-label="Post an ad"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-indigo-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95"
+          >
+            <Plus className="h-4 w-4" />
+            Post Ad
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-navigation"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          >
+            {menuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
+          </button>
         </div>
       </nav>
+
+      {/* Mobile dropdown menu */}
+      <div
+        id="mobile-navigation"
+        className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-in-out sm:hidden ${
+          menuOpen
+            ? 'grid-rows-[1fr] opacity-100'
+            : 'pointer-events-none grid-rows-[0fr] opacity-0'
+        }`}
+        aria-hidden={!menuOpen}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="border-t border-slate-100 bg-white px-4 pb-5 pt-3">
+            <div className="space-y-1">
+              <Link
+                href="/"
+                onClick={closeMenu}
+                tabIndex={menuOpen ? 0 : -1}
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700"
+              >
+                <Home className="h-5 w-5 text-slate-400" />
+                Home
+              </Link>
+
+              <Link
+                href="/post-ad"
+                onClick={closeMenu}
+                tabIndex={menuOpen ? 0 : -1}
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700"
+              >
+                <Plus className="h-5 w-5 text-slate-400" />
+                Post an item for rent
+              </Link>
+
+              {userName ? (
+                <Link
+                  href="/profile"
+                  onClick={closeMenu}
+                  tabIndex={menuOpen ? 0 : -1}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700"
+                >
+                  <UserCircle className="h-5 w-5 text-slate-400" />
+                  My Profile
+                </Link>
+              ) : (
+                <Link
+                  href="/signin"
+                  onClick={closeMenu}
+                  tabIndex={menuOpen ? 0 : -1}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700"
+                >
+                  <LogIn className="h-5 w-5 text-slate-400" />
+                  Sign in / Create account
+                </Link>
+              )}
+            </div>
+
+            {/* Account information */}
+            {userName && (
+              <div className="mt-3 flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-indigo-600 font-semibold text-white">
+                    {userName.trim().charAt(0).toUpperCase() || (
+                      <UserRound className="h-4 w-4" />
+                    )}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="text-xs text-slate-500">Signed in as</p>
+                  <p className="truncate text-sm font-semibold text-slate-800">
+                    {userName}
+                  </p>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
     </header>
   );
 }
