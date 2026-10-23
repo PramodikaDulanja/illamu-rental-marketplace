@@ -35,14 +35,14 @@ export async function POST(request: Request) {
   }
 }
 
-// GET: Okkoma Items tika fetch karaganna
+
+
 export async function GET(
   request: Request,
-  context: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await Promise.resolve(context.params)
-    const id = resolvedParams.id
+    const { id } = await params;
 
     const item = await prisma.item.findUnique({
       where: { id },
@@ -50,22 +50,23 @@ export async function GET(
         category: true,
         user: {
           select: {
+            id: true,
             name: true,
             phoneNumber: true,
-            isVerified: true,
+            avatarUrl: true, // 🗂️ අයිතිකරුගේ avatarUrl එක ලබා ගැනීමට මෙය අත්‍යවශ්‍යයි
           },
         },
       },
-    })
+    });
 
     if (!item) {
-      return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, data: item }, { status: 200 })
-  } catch (error) {
-    console.error('Error fetching single item:', error)
-    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 })
+    return NextResponse.json({ success: true, data: item }, { status: 200 });
+  } catch (error: any) {
+    console.error('Error fetching item details:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 

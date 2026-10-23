@@ -9,6 +9,7 @@ interface Owner {
   id?: string;
   name: string;
   phoneNumber?: string;
+  avatarUrl?: string; // 🗂️ අයිතිකරුගේ ප්‍රොෆයිල් පින්තූරය සඳහා එකතු කරන ලදී
 }
 
 interface Item {
@@ -18,6 +19,7 @@ interface Item {
   pricePerDay: number;
   depositAmount: number | null;
   location: string;
+  subLocation?: string;
   imageUrls: string[];
   isAvailable?: boolean;
   createdAt?: string;
@@ -34,8 +36,7 @@ export default function ItemDetails() {
   const [activeImage, setActiveImage] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-useEffect(() => {
-    // මුලින්ම පේජ් එක ලෝඩ් වෙද්දී පෙනෙන නම
+  useEffect(() => {
     document.title = 'Item Details | Illamu.lk';
 
     if (typeof window !== 'undefined') {
@@ -54,7 +55,6 @@ useEffect(() => {
             setActiveImage(itemData.imageUrls[0]);
           }
           
-          // 🗂️ ඩේටා ෆෙච් වුණු වහාම අයිතමයේ නම සහ උප ප්‍රදේශය (Sub-location) පමණක් ටැබ් එකට ලබා දීම
           const itemTitle = itemData.title || 'Item';
           const itemLocation = itemData.subLocation || itemData.location || 'Sri Lanka';
           document.title = `${itemTitle} in ${itemLocation} | Illamu.lk`;
@@ -113,8 +113,6 @@ useEffect(() => {
   }
 
   const isNotAvailable = item.isAvailable === false;
-  
-  // යූසර් ලොග් වී සිටින්නේ මෙම දැන්වීමේ අයිතිකරු ලෙස දැයි පරීක්ෂා කිරීම
   const isOwner = currentUserId && (item.userId === currentUserId || item.user?.id === currentUserId);
 
   return (
@@ -249,13 +247,20 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Owner Section & Action Buttons (Conditional Rendering based on isOwner) */}
+            {/* Owner Section & Action Buttons */}
             <div className="pt-6 border-t border-slate-100 space-y-5">
               <div className="flex items-center justify-between bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
                 <div className="flex items-center gap-3 overflow-hidden">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-600 to-blue-700 flex items-center justify-center text-white shadow-md flex-shrink-0 font-bold">
-                    {item.user?.name ? item.user.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+                  
+                  {/* අයිතිකරුගේ ප්‍රොෆයිල් පින්තූරය පෙන්වීම */}
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-600 to-blue-700 flex items-center justify-center text-white shadow-md flex-shrink-0 font-bold overflow-hidden">
+                    {item.user?.avatarUrl ? (
+                      <img src={item.user.avatarUrl} alt={item.user.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{item.user?.name ? item.user.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}</span>
+                    )}
                   </div>
+
                   <div className="overflow-hidden">
                     <p className="font-bold text-slate-900 text-sm truncate">
                       {item.user?.name || 'Owner'} {isOwner && <span className="text-indigo-600 text-xs font-extrabold">(You)</span>}
@@ -276,7 +281,6 @@ useEffect(() => {
                 )}
               </div>
 
-              {/* අයිතිකරු නම් Call බටන් වෙනුවට Manage/Edit බටන් පෙන්වීම, වෙනත් අයෙකු නම් සාමාන්‍ය පරිදි Call/WhatsApp පෙන්වීම */}
               {isOwner ? (
                 <div className="space-y-3">
                   <div className="w-full bg-indigo-50 border border-indigo-100 py-2.5 px-4 rounded-2xl text-center">

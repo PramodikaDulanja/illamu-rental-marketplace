@@ -13,6 +13,7 @@ model User {
   name         String?
   address     String?  // Aluthin add kala
   email       String?
+  avatarUrl   String?
   isVerified   Boolean  @default(false)
   password    String?
   isAdmin      Boolean  @default(false)

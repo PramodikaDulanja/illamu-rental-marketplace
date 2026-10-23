@@ -134,7 +134,19 @@ export default function AdminPage() {
                       <div>
                         <h3 className="font-semibold text-gray-900 text-sm">{item.title}</h3>
                         <p className="text-blue-900 font-bold text-xs mt-0.5">Rs. {item.pricePerDay?.toLocaleString()} / day</p>
-                        <p className="text-xs text-gray-500 mt-1">Owner: <span className="font-medium text-gray-700">{item.user?.name || 'Unknown'}</span></p>
+                        
+                        {/* Owner Info with Avatar */}
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <div className="w-5 h-5 rounded-full bg-indigo-600 text-white overflow-hidden flex items-center justify-center text-[10px] font-bold">
+                            {item.user?.avatarUrl ? (
+                              <img src={item.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span>{item.user?.name ? item.user.name.charAt(0).toUpperCase() : 'U'}</span>
+                            )}
+                          </div>
+                          <span className="text-xs text-gray-500">Owner: <span className="font-medium text-gray-700">{item.user?.name || 'Unknown'}</span></span>
+                        </div>
+
                       </div>
                     </div>
 
@@ -167,9 +179,16 @@ export default function AdminPage() {
                 users.map((usr: any, index) => (
                   <div key={usr.id || index} className="p-4 flex items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 text-blue-900 font-bold rounded-full flex items-center justify-center text-sm">
-                        {usr.name ? usr.name.charAt(0).toUpperCase() : 'U'}
+                      
+                      {/* User Avatar */}
+                      <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-900 font-bold overflow-hidden flex items-center justify-center text-sm shrink-0 border border-blue-200">
+                        {usr.avatarUrl ? (
+                          <img src={usr.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span>{usr.name ? usr.name.charAt(0).toUpperCase() : 'U'}</span>
+                        )}
                       </div>
+
                       <div>
                         <h3 className="font-semibold text-gray-900 text-sm">{usr.name || 'User'}</h3>
                         <p className="text-xs text-gray-500">{usr.email || usr.phoneNumber || 'No contact info'}</p>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,15 +11,37 @@ import {
   Home,
   UserCircle,
 } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function Navbar() {
   const [userName, setUserName] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const name = localStorage.getItem('userName');
+    const userId = localStorage.getItem('userId');
+
     if (name) setUserName(name);
+
+    // Fetch user profile to load the uploaded avatar URL
+    if (userId) {
+      fetch(`/api/users/${userId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data) {
+            if (data.data.avatarUrl) {
+              setAvatarUrl(data.data.avatarUrl);
+            }
+            if (data.data.name) {
+              setUserName(data.data.name);
+            }
+          }
+        })
+        .catch((err) => {
+          console.error('Error fetching user details for navbar:', err);
+        });
+    }
   }, []);
 
   // Close menu when navigating
@@ -62,14 +83,14 @@ export default function Navbar() {
               title={`Profile: ${userName}`}
               className="group flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white py-1 px-1 transition hover:border-indigo-200 hover:bg-indigo-50"
             >
-              <Avatar className="h-9 w-9">
+              <Avatar className="h-9 w-9 overflow-hidden">
+                <AvatarImage src={avatarUrl || ''} alt={userName} className="object-cover" />
                 <AvatarFallback className="bg-indigo-600 text-xs font-bold text-white">
                   {userName.trim().charAt(0).toUpperCase() || (
                     <UserRound className="h-4 w-4" />
                   )}
                 </AvatarFallback>
               </Avatar>
-              
             </Link>
           ) : (
             <Link
@@ -169,7 +190,8 @@ export default function Navbar() {
             {/* Account information */}
             {userName && (
               <div className="mt-3 flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <Avatar className="h-10 w-10">
+                <Avatar className="h-10 w-10 overflow-hidden">
+                  <AvatarImage src={avatarUrl || ''} alt={userName} className="object-cover" />
                   <AvatarFallback className="bg-indigo-600 font-semibold text-white">
                     {userName.trim().charAt(0).toUpperCase() || (
                       <UserRound className="h-4 w-4" />

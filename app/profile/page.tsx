@@ -1,17 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Phone, ShieldCheck, Package, LogOut, Trash2, Edit, MapPin, Mail, X, AlertTriangle } from 'lucide-react';
+import { Phone, ShieldCheck, Package, LogOut, Trash2, Edit, MapPin, Mail, X, AlertTriangle, Camera } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
-  // Custom Confirmation Modal සඳහා states
   const [confirmModal, setConfirmModal] = useState<{
     show: boolean;
     title: string;
@@ -29,9 +35,10 @@ export default function ProfilePage() {
     phoneNumber: '',
     address: '',
     email: '',
+    avatarUrl: '',
   });
-  const router = useRouter();
 
+  const router = useRouter();
   const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') || 'fc1d6aca-d503-43f4-a177-80d7779a3f50' : '';
 
   useEffect(() => {
@@ -52,8 +59,8 @@ export default function ProfilePage() {
             phoneNumber: userData.phoneNumber || '',
             address: userData.address || '',
             email: userData.email || '',
+            avatarUrl: userData.avatarUrl || '',
           });
-          // 🗂️ ඩේටා ෆෙච් වුණු ගමන් යූසර්ගේ නම සමඟ බ්‍රව්සර් ටැබ් එකේ නම අප්ඩේට් වේ
           document.title = `${userData.name || 'User'} | Profile - Illamu.lk`;
         } else {
           const fallbackName = localStorage.getItem('userName') || 'User';
@@ -62,6 +69,7 @@ export default function ProfilePage() {
             phoneNumber: 'Not Available',
             address: 'Not Available',
             email: 'Not Available',
+            avatarUrl: '',
             items: [],
           });
           document.title = `${fallbackName} | Profile - Illamu.lk`;
@@ -74,6 +82,37 @@ export default function ProfilePage() {
         document.title = 'My Profile | Illamu.lk';
       });
   }, [userId]);
+
+  // Handle Avatar Image Upload to Supabase Storage
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    try {
+      const fileName = `avatar-${userId}-${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('user-avatars') // Make sure this public bucket exists in Supabase
+        .upload(fileName, file);
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('user-avatars')
+        .getPublicUrl(fileName);
+
+      const newAvatarUrl = publicUrlData.publicUrl;
+      setEditForm((prev) => ({ ...prev, avatarUrl: newAvatarUrl }));
+      toast.success('Avatar uploaded successfully! Save changes to apply.', { duration: 2000 });
+    } catch (error: any) {
+      console.error('Avatar upload failed:', error);
+      toast.error('Failed to upload image: ' + error.message, { duration: 2000 });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   // Log Out Confirmation Trigger
   const handleLogout = () => {
@@ -125,7 +164,7 @@ export default function ProfilePage() {
     });
   };
 
-  // Profile Update Trigger (Edit Profile Confirmation)
+  // Profile Update Trigger
   const handleUpdateProfileClick = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -198,8 +237,13 @@ export default function ProfilePage() {
           <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-indigo-500/5 to-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 relative z-10">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700 text-white flex items-center justify-center text-3xl font-black shadow-lg shadow-indigo-500/20 shrink-0">
-              {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+            {/* Avatar Display */}
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700 text-white flex items-center justify-center text-3xl font-black shadow-lg shadow-indigo-500/20 shrink-0 overflow-hidden">
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+              ) : (
+                <span>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</span>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -255,7 +299,7 @@ export default function ProfilePage() {
         {/* Edit Profile Modal */}
         {isEditing && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in duration-200 border border-slate-100">
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in duration-200 border border-slate-100 max-h-[90vh] overflow-y-auto">
               <button 
                 onClick={() => setIsEditing(false)}
                 className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 bg-slate-50 p-2 rounded-full transition-colors"
@@ -266,6 +310,31 @@ export default function ProfilePage() {
               <h2 className="text-xl font-black text-slate-900 mb-6">Edit Profile</h2>
               
               <form onSubmit={handleUpdateProfileClick} className="space-y-4">
+                
+                {/* Profile Picture Upload Field */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Profile Picture</label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-slate-100 overflow-hidden border border-slate-200 shrink-0 flex items-center justify-center">
+                      {editForm.avatarUrl ? (
+                        <img src={editForm.avatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <Camera className="w-6 h-6 text-slate-400" />
+                      )}
+                    </div>
+                    <label className="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-4 py-2.5 rounded-xl border border-indigo-100 transition-all">
+                      {uploadingAvatar ? 'Uploading...' : 'Change Avatar'}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleAvatarUpload} 
+                        className="hidden" 
+                        disabled={uploadingAvatar}
+                      />
+                    </label>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Name</label>
                   <input
@@ -361,7 +430,6 @@ export default function ProfilePage() {
                         <div className="flex items-center justify-center h-full text-slate-400 text-xs font-semibold">No Image</div>
                       )}
                       
-                      {/* Availability Indicator */}
                       <div className="absolute top-3 right-3">
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold shadow-sm uppercase tracking-wider ${
                           item.isAvailable !== false ? 'bg-emerald-500 text-white' : 'bg-rose-600 text-white'
@@ -447,7 +515,7 @@ export default function ProfilePage() {
 
       </div>
 
-      {/* Professional Yes / No Custom Confirmation Modal */}
+      {/* Confirmation Modal */}
       {confirmModal.show && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4 border border-slate-100 animate-in zoom-in-95 duration-200">
