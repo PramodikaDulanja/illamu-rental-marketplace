@@ -12,6 +12,7 @@ interface Item {
   imageUrls: string[];
   categoryId: number;
   isAvailable?: boolean;
+  createdAt?: string;
 }
 
 const sriLankaDistricts = [
@@ -30,6 +31,10 @@ export default function Home() {
   const [selectedDistrict, setSelectedDistrict] = useState<string>('all');
   const [subLocationSearch, setSubLocationSearch] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  
+  // 🗂️ Advanced Sorting & Filtering States
+  const [availabilityFilter, setAvailabilityFilter] = useState<string>('all'); // 'all' | 'available' | 'rented'
+  const [sortBy, setSortBy] = useState<string>('newest'); // 'newest' | 'price-low' | 'price-high'
 
   const categories = [
     { id: '1', name: 'Electronics & Cameras', icon: <Camera className="w-5 h-5 text-indigo-600" />, bg: 'bg-indigo-50 border-indigo-100 hover:border-indigo-300' },
@@ -54,6 +59,7 @@ export default function Home() {
       });
   }, []);
 
+  // 🗂️ Filtering Logic
   const filteredItems = items.filter((item) => {
     if (selectedCategory !== 'all' && item.categoryId.toString() !== selectedCategory) {
       return false;
@@ -71,7 +77,28 @@ export default function Home() {
         return false;
       }
     }
+    // Availability Status Filter Check
+    if (availabilityFilter === 'available' && item.isAvailable === false) {
+      return false;
+    }
+    if (availabilityFilter === 'rented' && item.isAvailable !== false) {
+      return false;
+    }
     return true;
+  });
+
+  // 🗂️ Sorting Logic
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    if (sortBy === 'price-low') {
+      return a.pricePerDay - b.pricePerDay;
+    }
+    if (sortBy === 'price-high') {
+      return b.pricePerDay - a.pricePerDay;
+    }
+    // Default: 'newest'
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateB - dateA;
   });
 
   return (
@@ -196,7 +223,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Advanced Filter Section */}
+      {/* Basic Filter Section (District & Sub-location) */}
       <section className="relative z-10 max-w-6xl mx-auto px-6 mb-8">
         <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -204,13 +231,15 @@ export default function Home() {
               <Filter className="w-5 h-5 text-indigo-600" />
               <h2>Filter & Location</h2>
             </div>
-            {(selectedCategory !== 'all' || selectedDistrict !== 'all' || subLocationSearch || searchQuery) && (
+            {(selectedCategory !== 'all' || selectedDistrict !== 'all' || subLocationSearch || searchQuery || availabilityFilter !== 'all' || sortBy !== 'newest') && (
               <button
                 onClick={() => {
                   setSelectedCategory('all');
                   setSelectedDistrict('all');
                   setSubLocationSearch('');
                   setSearchQuery('');
+                  setAvailabilityFilter('all');
+                  setSortBy('newest');
                 }}
                 className="text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-full transition-colors"
               >
@@ -258,7 +287,7 @@ export default function Home() {
                 type="text"
                 value={subLocationSearch}
                 onChange={(e) => setSubLocationSearch(e.target.value)}
-                placeholder="e.g. Balangoda, Palmadulla"
+                placeholder="e.g. Balangoda, Kollupitiya"
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 bg-slate-50/50 transition-all text-slate-700 placeholder-slate-400"
               />
             </div>
@@ -266,18 +295,53 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Available Items Section */}
+      {/* Available Items Section with Inline Availability & Sort Dropdowns */}
       <section className="relative z-10 max-w-6xl mx-auto px-6 pb-24">
-        <div className="flex justify-between items-center mb-6">
+        
+        {/* Header with items count and newly added inline Availability & Sort filters */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-slate-100 shadow-sm">
           <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              Available Items
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">
+              Explore Listings
             </h2>
             <p className="text-xs text-slate-500 font-medium">Showing items matching your active search</p>
           </div>
-          <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full">
-            {filteredItems.length} items found
-          </span>
+
+          {/* Inline Controls (Items Count Badge + Availability + Sort) */}
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+            <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-full">
+              {sortedItems.length} items found
+            </span>
+
+            {/* Availability Filter Dropdown */}
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 shadow-xs">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Status:</span>
+              <select
+                value={availabilityFilter}
+                onChange={(e) => setAvailabilityFilter(e.target.value)}
+                className="bg-transparent text-xs font-semibold text-slate-700 outline-none cursor-pointer"
+              >
+                <option value="all">All Items</option>
+                <option value="available">Available Only</option>
+                <option value="rented">Rented Out</option>
+              </select>
+            </div>
+
+            {/* Sort By Dropdown */}
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 shadow-xs">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Sort:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-transparent text-xs font-semibold text-slate-700 outline-none cursor-pointer"
+              >
+                <option value="newest">Newest First</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+              </select>
+            </div>
+
+          </div>
         </div>
         
         {loading ? (
@@ -290,7 +354,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-        ) : filteredItems.length === 0 ? (
+        ) : sortedItems.length === 0 ? (
           <div className="text-center py-20 bg-white/90 backdrop-blur-md rounded-3xl border border-slate-100 shadow-sm space-y-4 max-w-lg mx-auto">
             <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
               📦
@@ -303,6 +367,8 @@ export default function Home() {
                 setSelectedDistrict('all');
                 setSubLocationSearch('');
                 setSearchQuery('');
+                setAvailabilityFilter('all');
+                setSortBy('newest');
               }}
               className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-5 py-2.5 rounded-full transition-all shadow-md hover:shadow-indigo-500/25"
             >
@@ -311,7 +377,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredItems.map((item) => {
+            {sortedItems.map((item) => {
               const isNotAvailable = item.isAvailable === false;
 
               return (
