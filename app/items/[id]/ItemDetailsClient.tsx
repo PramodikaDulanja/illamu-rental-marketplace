@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { MapPin, Phone, MessageCircle, ShieldCheck, User, ArrowLeft, Sparkles, Tag, CheckCircle2, AlertCircle, Clock, Edit } from 'lucide-react';
+import { MapPin, Phone, MessageCircle, ShieldCheck, User, ArrowLeft, Sparkles, Tag, CheckCircle2, AlertCircle, Clock, Edit, Heart } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface Owner {
   id?: string;
   name: string;
   phoneNumber?: string;
-  avatarUrl?: string; // 🗂️ අයිතිකරුගේ ප්‍රොෆයිල් පින්තූරය සඳහා එකතු කරන ලදී
+  avatarUrl?: string; // 🗂️ අයිතිකරුගේ ප්‍රොෆයිල් පින්තූරය
 }
 
 interface Item {
@@ -35,16 +36,20 @@ export default function ItemDetails() {
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     document.title = 'Item Details | Illamu.lk';
 
+    let userId = null;
     if (typeof window !== 'undefined') {
-      setCurrentUserId(localStorage.getItem('userId'));
+      userId = localStorage.getItem('userId');
+      setCurrentUserId(userId);
     }
 
     if (!id) return;
 
+    // Fetch Item Details
     fetch(`/api/items/${id}`)
       .then((res) => res.json())
       .then((data) => {
@@ -66,7 +71,48 @@ export default function ItemDetails() {
         setLoading(false);
         document.title = 'Item Details | Illamu.lk';
       });
+
+    // Check if item is already in user's wishlist
+    if (userId && id) {
+      fetch(`/api/saved-items?userId=${userId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data) {
+            const isAlreadySaved = data.data.some((savedItem: any) => savedItem.id === id);
+            setIsSaved(isAlreadySaved);
+          }
+        })
+        .catch((err) => console.error('Error checking wishlist:', err));
+    }
   }, [id]);
+
+  // Handle Wishlist Toggle (Bookmark)
+  const handleToggleWishlist = async () => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      toast.error('Please sign in to save items to your wishlist!');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/saved-items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, itemId: item?.id }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setIsSaved(data.saved);
+        toast.success(data.message, { duration: 2000 });
+      } else {
+        toast.error('Failed to update wishlist');
+      }
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+      toast.error('Something went wrong!');
+    }
+  };
 
   const formatPostedDate = (dateString?: string) => {
     if (!dateString) return 'Recently';
@@ -195,11 +241,23 @@ export default function ItemDetails() {
                 </div>
               </div>
 
-              {/* Title */}
-              <div>
+              {/* Title & Wishlist Bookmark Button */}
+              <div className="flex items-start justify-between gap-3">
                 <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-snug">
                   {item.title}
                 </h1>
+
+                <button
+                  onClick={handleToggleWishlist}
+                  className={`p-3 rounded-2xl border transition-all shadow-sm flex items-center justify-center shrink-0 ${
+                    isSaved 
+                      ? 'bg-rose-50 border-rose-200 text-rose-600' 
+                      : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200'
+                  }`}
+                  title={isSaved ? 'Remove from Wishlist' : 'Save to Wishlist'}
+                >
+                  <Heart className={`w-5 h-5 ${isSaved ? 'fill-rose-600' : ''}`} />
+                </button>
               </div>
 
               {/* Price Tag */}

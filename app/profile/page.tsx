@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Phone, ShieldCheck, Package, LogOut, Trash2, Edit, MapPin, Mail, X, AlertTriangle, Camera } from 'lucide-react';
+import { Phone, ShieldCheck, Package, LogOut, Trash2, Edit, MapPin, Mail, X, AlertTriangle, Camera, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -17,6 +17,10 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  
+  // 🗂️ Wishlist & Tabs States
+  const [savedItems, setSavedItems] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'ads' | 'wishlist'>('ads');
   
   const [confirmModal, setConfirmModal] = useState<{
     show: boolean;
@@ -48,6 +52,7 @@ export default function ProfilePage() {
       return;
     }
 
+    // Fetch User Profile & Posted Ads
     fetch(`/api/users/${userId}`)
       .then((res) => res.json())
       .then((data) => {
@@ -81,6 +86,18 @@ export default function ProfilePage() {
         setLoading(false);
         document.title = 'My Profile | Illamu.lk';
       });
+
+    // 🗂️ Fetch Saved Wishlist Items
+    fetch(`/api/saved-items?userId=${userId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setSavedItems(data.data);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching saved wishlist items:', err);
+      });
   }, [userId]);
 
   // Handle Avatar Image Upload to Supabase Storage
@@ -92,7 +109,7 @@ export default function ProfilePage() {
     try {
       const fileName = `avatar-${userId}-${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage
-        .from('user-avatars') // Make sure this public bucket exists in Supabase
+        .from('user-avatars')
         .upload(fileName, file);
 
       if (uploadError) {
@@ -393,124 +410,182 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* User's Posted Ads Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <Package className="w-5 h-5 text-indigo-600" /> My Posted Ads
-            </h2>
-            <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full">
-              {user.items?.length || 0} listings
-            </span>
+        {/* 🗂️ Tabs for Posted Ads & Saved Wishlist */}
+        <div className="space-y-6">
+          <div className="flex gap-3 border-b border-slate-200/80 pb-3">
+            <button
+              onClick={() => setActiveTab('ads')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-xs transition-all ${
+                activeTab === 'ads' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <Package className="w-4 h-4" /> My Posted Ads ({user.items?.length || 0})
+            </button>
+            <button
+              onClick={() => setActiveTab('wishlist')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-xs transition-all ${
+                activeTab === 'wishlist' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <Heart className="w-4 h-4 text-rose-500 fill-rose-500" /> Saved Wishlist ({savedItems.length})
+            </button>
           </div>
 
-          {user.items?.length === 0 ? (
-            <div className="bg-white p-12 rounded-3xl text-center border border-slate-100 shadow-sm space-y-3">
-              <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
-                🏷️
-              </div>
-              <p className="text-slate-600 text-sm font-medium">You haven&apos;t posted any ads yet.</p>
-              <Link 
-                href="/post-ad"
-                className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-5 py-2.5 rounded-full shadow-md transition-all"
-              >
-                + Post your first ad
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {user.items.map((item: any) => (
-                <div key={item.id} className="group bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between">
-                  
-                  <Link href={`/items/${item.id}`} className="block">
-                    <div className="h-44 bg-slate-100 relative overflow-hidden">
-                      {item.imageUrls?.[0] ? (
-                        <img src={item.imageUrls[0]} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      ) : (
-                        <div className="flex items-center justify-center h-full text-slate-400 text-xs font-semibold">No Image</div>
-                      )}
-                      
-                      <div className="absolute top-3 right-3">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold shadow-sm uppercase tracking-wider ${
-                          item.isAvailable !== false ? 'bg-emerald-500 text-white' : 'bg-rose-600 text-white'
-                        }`}>
-                          {item.isAvailable !== false ? 'Active' : 'Rented Out'}
-                        </span>
+          {/* Tab 1: My Posted Ads */}
+          {activeTab === 'ads' && (
+            <div>
+              {user.items?.length === 0 ? (
+                <div className="bg-white p-12 rounded-3xl text-center border border-slate-100 shadow-sm space-y-3">
+                  <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+                    🏷️
+                  </div>
+                  <p className="text-slate-600 text-sm font-medium">You haven&apos;t posted any ads yet.</p>
+                  <Link 
+                    href="/post-ad"
+                    className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-5 py-2.5 rounded-full shadow-md transition-all"
+                  >
+                    + Post your first ad
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {user.items.map((item: any) => (
+                    <div key={item.id} className="group bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between">
+                      <Link href={`/items/${item.id}`} className="block">
+                        <div className="h-44 bg-slate-100 relative overflow-hidden">
+                          {item.imageUrls?.[0] ? (
+                            <img src={item.imageUrls[0]} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-slate-400 text-xs font-semibold">No Image</div>
+                          )}
+                          
+                          <div className="absolute top-3 right-3">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold shadow-sm uppercase tracking-wider ${
+                              item.isAvailable !== false ? 'bg-emerald-500 text-white' : 'bg-rose-600 text-white'
+                            }`}>
+                              {item.isAvailable !== false ? 'Active' : 'Rented Out'}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="p-5 pb-3 space-y-1">
+                          <h3 className="font-bold text-slate-800 text-base truncate group-hover:text-indigo-600 transition-colors">{item.title}</h3>
+                          <p className="text-indigo-900 font-extrabold text-base">
+                            Rs. {item.pricePerDay?.toLocaleString()} <span className="text-xs font-normal text-slate-500">/ day</span>
+                          </p>
+                        </div>
+                      </Link>
+
+                      <div className="p-5 pt-0 space-y-2 mt-auto">
+                        <button
+                          onClick={() => {
+                            const newStatus = item.isAvailable === false ? true : false;
+                            setConfirmModal({
+                              show: true,
+                              title: 'Update Availability Status',
+                              message: `Are you sure you want to mark this item as ${newStatus ? 'Available' : 'Rented Out'}?`,
+                              onConfirm: async () => {
+                                const res = await fetch(`/api/items/${item.id}`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ isAvailable: newStatus })
+                                });
+                                if (res.ok) {
+                                  toast.success(newStatus ? 'Item marked as Available!' : 'Item marked as Rented Out!', { duration: 2000 });
+                                  setTimeout(() => {
+                                    window.location.reload();
+                                  }, 1500);
+                                } else {
+                                  toast.error('Failed to update status', { duration: 2000 });
+                                }
+                              }
+                            });
+                          }}
+                          className={`w-full py-2.5 rounded-2xl text-xs font-bold transition-all border ${
+                            item.isAvailable !== false 
+                              ? 'bg-amber-50 text-amber-700 border-amber-200/60 hover:bg-amber-100' 
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-200/60 hover:bg-emerald-100'
+                          }`}
+                        >
+                          {item.isAvailable !== false ? 'Mark as Rented Out' : 'Mark as Available'}
+                        </button>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setConfirmModal({
+                                show: true,
+                                title: 'Edit Ad Confirmation',
+                                message: 'Are you sure you want to edit this ad details?',
+                                onConfirm: () => {
+                                  router.push(`/items/${item.id}/edit`);
+                                },
+                              });
+                            }}
+                            className="flex items-center justify-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 py-2 rounded-xl text-xs font-bold transition-colors border border-indigo-100"
+                          >
+                            <Edit className="w-3.5 h-3.5" /> Edit
+                          </button>
+
+                          <button
+                            onClick={(e) => handleDeleteItem(item.id, e)}
+                            className="flex items-center justify-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 py-2 rounded-xl text-xs font-bold transition-colors border border-rose-100"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="p-5 pb-3 space-y-1">
-                      <h3 className="font-bold text-slate-800 text-base truncate group-hover:text-indigo-600 transition-colors">{item.title}</h3>
-                      <p className="text-indigo-900 font-extrabold text-base">
-                        Rs. {item.pricePerDay?.toLocaleString()} <span className="text-xs font-normal text-slate-500">/ day</span>
-                      </p>
-                    </div>
-                  </Link>
-
-                  <div className="p-5 pt-0 space-y-2 mt-auto">
-                    <button
-                      onClick={() => {
-                        const newStatus = item.isAvailable === false ? true : false;
-                        setConfirmModal({
-                          show: true,
-                          title: 'Update Availability Status',
-                          message: `Are you sure you want to mark this item as ${newStatus ? 'Available' : 'Rented Out'}?`,
-                          onConfirm: async () => {
-                            const res = await fetch(`/api/items/${item.id}`, {
-                              method: 'PUT',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ isAvailable: newStatus })
-                            });
-                            if (res.ok) {
-                              toast.success(newStatus ? 'Item marked as Available!' : 'Item marked as Rented Out!', { duration: 2000 });
-                              setTimeout(() => {
-                                window.location.reload();
-                              }, 1500);
-                            } else {
-                              toast.error('Failed to update status', { duration: 2000 });
-                            }
-                          }
-                        });
-                      }}
-                      className={`w-full py-2.5 rounded-2xl text-xs font-bold transition-all border ${
-                        item.isAvailable !== false 
-                          ? 'bg-amber-50 text-amber-700 border-amber-200/60 hover:bg-amber-100' 
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-200/60 hover:bg-emerald-100'
-                      }`}
-                    >
-                      {item.isAvailable !== false ? 'Mark as Rented Out' : 'Mark as Available'}
-                    </button>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setConfirmModal({
-                            show: true,
-                            title: 'Edit Ad Confirmation',
-                            message: 'Are you sure you want to edit this ad details?',
-                            onConfirm: () => {
-                              router.push(`/items/${item.id}/edit`);
-                            },
-                          });
-                        }}
-                        className="flex items-center justify-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 py-2 rounded-xl text-xs font-bold transition-colors border border-indigo-100"
-                      >
-                        <Edit className="w-3.5 h-3.5" /> Edit
-                      </button>
-
-                      <button
-                        onClick={(e) => handleDeleteItem(item.id, e)}
-                        className="flex items-center justify-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 py-2 rounded-xl text-xs font-bold transition-colors border border-rose-100"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> Delete
-                      </button>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           )}
+
+          {/* Tab 2: Saved Wishlist */}
+          {activeTab === 'wishlist' && (
+            <div>
+              {savedItems.length === 0 ? (
+                <div className="bg-white p-12 rounded-3xl text-center border border-slate-100 shadow-sm space-y-3">
+                  <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                    ❤️
+                  </div>
+                  <p className="text-slate-600 text-sm font-medium">Your wishlist is empty. Save items while browsing!</p>
+                  <Link 
+                    href="/"
+                    className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-5 py-2.5 rounded-full shadow-md transition-all"
+                  >
+                    Explore listings
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {savedItems.map((item: any) => (
+                    <div key={item.id} className="group bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between">
+                      <Link href={`/items/${item.id}`} className="block">
+                        <div className="h-44 bg-slate-100 relative overflow-hidden">
+                          {item.imageUrls?.[0] ? (
+                            <img src={item.imageUrls[0]} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-slate-400 text-xs font-semibold">No Image</div>
+                          )}
+                        </div>
+                        
+                        <div className="p-5 pb-4 space-y-1">
+                          <h3 className="font-bold text-slate-800 text-base truncate group-hover:text-indigo-600 transition-colors">{item.title}</h3>
+                          <p className="text-indigo-900 font-extrabold text-base">
+                            Rs. {item.pricePerDay?.toLocaleString()} <span className="text-xs font-normal text-slate-500">/ day</span>
+                          </p>
+                        </div>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
 
       </div>
