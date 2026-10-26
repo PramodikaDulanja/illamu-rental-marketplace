@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { Phone, ShieldCheck, Package, LogOut, Trash2, Edit, MapPin, Mail, X, AlertTriangle, Camera, Heart } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { createClient } from '@supabase/supabase-js';
 
@@ -12,15 +12,25 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export default function ProfilePage() {
+function ProfileContent() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
-  // 🗂️ Wishlist & Tabs States
+  // Wishlist & Tabs States
   const [savedItems, setSavedItems] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'ads' | 'wishlist'>('ads');
+
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+
+  // URL එකේ tab=wishlist තිබේ නම් ස්වයංක්‍රීයව wishlist ටැබ් එකට මාරු වීම
+  useEffect(() => {
+    if (tabParam === 'wishlist') {
+      setActiveTab('wishlist');
+    }
+  }, [tabParam]);
   
   const [confirmModal, setConfirmModal] = useState<{
     show: boolean;
@@ -87,7 +97,7 @@ export default function ProfilePage() {
         document.title = 'My Profile | Illamu.lk';
       });
 
-    // 🗂️ Fetch Saved Wishlist Items
+    // Fetch Saved Wishlist Items
     fetch(`/api/saved-items?userId=${userId}`)
       .then((res) => res.json())
       .then((data) => {
@@ -544,47 +554,77 @@ export default function ProfilePage() {
           )}
 
           {/* Tab 2: Saved Wishlist */}
-          {activeTab === 'wishlist' && (
-            <div>
-              {savedItems.length === 0 ? (
-                <div className="bg-white p-12 rounded-3xl text-center border border-slate-100 shadow-sm space-y-3">
-                  <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto text-xl">
-                    ❤️
-                  </div>
-                  <p className="text-slate-600 text-sm font-medium">Your wishlist is empty. Save items while browsing!</p>
-                  <Link 
-                    href="/"
-                    className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-5 py-2.5 rounded-full shadow-md transition-all"
-                  >
-                    Explore listings
-                  </Link>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {savedItems.map((item: any) => (
-                    <div key={item.id} className="group bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between">
-                      <Link href={`/items/${item.id}`} className="block">
-                        <div className="h-44 bg-slate-100 relative overflow-hidden">
-                          {item.imageUrls?.[0] ? (
-                            <img src={item.imageUrls[0]} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                          ) : (
-                            <div className="flex items-center justify-center h-full text-slate-400 text-xs font-semibold">No Image</div>
-                          )}
-                        </div>
-                        
-                        <div className="p-5 pb-4 space-y-1">
-                          <h3 className="font-bold text-slate-800 text-base truncate group-hover:text-indigo-600 transition-colors">{item.title}</h3>
-                          <p className="text-indigo-900 font-extrabold text-base">
-                            Rs. {item.pricePerDay?.toLocaleString()} <span className="text-xs font-normal text-slate-500">/ day</span>
-                          </p>
-                        </div>
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+{activeTab === 'wishlist' && (
+  <div>
+    {savedItems.length === 0 ? (
+      <div className="bg-white p-12 rounded-3xl text-center border border-slate-100 shadow-sm space-y-3">
+        <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto text-xl">
+          ❤️
+        </div>
+        <p className="text-slate-600 text-sm font-medium">Your wishlist is empty. Save items while browsing!</p>
+        <Link 
+          href="/"
+          className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-5 py-2.5 rounded-full shadow-md transition-all"
+        >
+          Explore listings
+        </Link>
+      </div>
+    ) : (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {savedItems.map((item: any) => (
+          <div key={item.id} className="group bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between relative">
+            
+            {/* ❤️ Heart Wishlist Remove Button */}
+            <button
+              onClick={async (e) => {
+                e.preventDefault();
+                try {
+                  const res = await fetch('/api/saved-items', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, itemId: item.id }),
+                  });
+                  const data = await res.json();
+
+                  if (data.success) {
+                    setSavedItems((prev) => prev.filter((s) => s.id !== item.id));
+                    toast.success('Removed from wishlist!', { duration: 1500 });
+                  } else {
+                    toast.error('Failed to remove item');
+                  }
+                } catch (err) {
+                  console.error('Error removing bookmark:', err);
+                  toast.error('Something went wrong!');
+                }
+              }}
+              className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-rose-600 hover:scale-110 transition-all z-10 border border-slate-200/60"
+              title="Remove from Wishlist"
+            >
+              <Heart className="w-4 h-4 fill-rose-600 text-rose-600" />
+            </button>
+
+            <Link href={`/items/${item.id}`} className="block">
+              <div className="h-44 bg-slate-100 relative overflow-hidden">
+                {item.imageUrls?.[0] ? (
+                  <img src={item.imageUrls[0]} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400 text-xs font-semibold">No Image</div>
+                )}
+              </div>
+              
+              <div className="p-5 pb-4 space-y-1">
+                <h3 className="font-bold text-slate-800 text-base truncate group-hover:text-indigo-600 transition-colors">{item.title}</h3>
+                <p className="text-indigo-900 font-extrabold text-base">
+                  Rs. {item.pricePerDay?.toLocaleString()} <span className="text-xs font-normal text-slate-500">/ day</span>
+                </p>
+              </div>
+            </Link>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
 
         </div>
 
@@ -626,5 +666,13 @@ export default function ProfilePage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-slate-500 font-medium">Loading profile...</div>}>
+      <ProfileContent />
+    </Suspense>
   );
 }

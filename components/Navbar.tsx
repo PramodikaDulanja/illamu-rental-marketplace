@@ -10,6 +10,7 @@ import {
   X,
   Home,
   UserCircle,
+  Heart,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -71,10 +72,19 @@ export default function Navbar() {
         <div className="hidden items-center gap-3 sm:flex">
           <Link
             href="/post-ad"
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-md"
+            className="inline-flex h-8 items-center gap-2 rounded-2xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-md"
           >
             <Plus className="h-[18px] w-[18px]" />
             Post Ad
+          </Link>
+
+          {/* ❤️ Wishlist / Saved Items Button */}
+          <Link
+            href="/profile?tab=wishlist"
+            title="Saved Wishlist"
+            className="flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 shadow-sm"
+          >
+            <Heart className="h-5 w-5 fill-current" />
           </Link>
 
           {userName ? (
@@ -112,6 +122,15 @@ export default function Navbar() {
           >
             <Plus className="h-4 w-4" />
             Post Ad
+          </Link>
+
+          {/* Mobile Wishlist Heart Icon */}
+          <Link
+            href="/profile"
+            aria-label="Saved Wishlist"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 shadow-sm"
+          >
+            <Heart className="h-4 w-4 fill-current" />
           </Link>
 
           <button
@@ -162,6 +181,17 @@ export default function Navbar() {
               >
                 <Plus className="h-5 w-5 text-slate-400" />
                 Post an item for rent
+              </Link>
+
+              {/* Mobile Saved Wishlist Link */}
+              <Link
+                href="/profile"
+                onClick={closeMenu}
+                tabIndex={menuOpen ? 0 : -1}
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-rose-50 hover:text-rose-600"
+              >
+                <Heart className="h-5 w-5 text-rose-500 fill-rose-500" />
+                Saved Wishlist
               </Link>
 
               {userName ? (

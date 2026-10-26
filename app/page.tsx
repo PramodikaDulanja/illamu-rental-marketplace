@@ -156,8 +156,8 @@ export default function Home() {
         </div>
         
         <div className="relative z-10 max-w-4xl mx-auto space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-indigo-200 text-xs font-medium tracking-wide shadow-inner">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-4xl bg-white/10 backdrop-blur-md border border-white/15 text-indigo-200 text-xs font-medium tracking-wide shadow-inner">
+            
             Sri Lanka&apos;s Premier Rental Marketplace
           </div>
           
@@ -384,7 +384,7 @@ export default function Home() {
                 <Link 
                   href={`/items/${item.id}`} 
                   key={item.id} 
-                  className="group bg-white rounded-3xl shadow-sm border border-slate-100/80 overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 cursor-pointer flex flex-col relative"
+                  className="group bg-white rounded-2xl shadow-sm border border-slate-100/80 overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 cursor-pointer flex flex-col relative"
                 >
                   <div className="h-52 bg-slate-100 relative overflow-hidden">
                     {item.imageUrls && item.imageUrls.length > 0 ? (
@@ -397,40 +397,11 @@ export default function Home() {
                       <div className="flex items-center justify-center h-full text-slate-400 text-xs font-semibold bg-slate-50">No Image Available</div>
                     )}
 
-                    {/* ❤️ Wishlist Heart Button */}
-                    <button
-                      onClick={async (e) => {
-                        e.preventDefault();
-                        const userId = localStorage.getItem('userId');
-                        if (!userId) {
-                          toast.error('Please sign in to save items to your wishlist!');
-                          return;
-                        }
-                        try {
-                          const res = await fetch('/api/saved-items', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ userId, itemId: item.id }),
-                          });
-                          const data = await res.json();
-                          if (data.success) {
-                            toast.success(data.message, { duration: 1500 });
-                          }
-                        } catch (err) {
-                          console.error('Error toggling bookmark:', err);
-                        }
-                      }}
-                      className="absolute top-3 left-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-slate-600 hover:text-rose-600 hover:scale-110 transition-all z-10"
-                      title="Save to Wishlist"
-                    >
-                      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                      </svg>
-                    </button>
+                    
 
 
-                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-700 shadow-sm">
-                      ID: #{item.id.slice(0, 4)}
+                    <div className="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-xl text-[10px] font-bold text-white shadow-md tracking-wider">
+                      REF-{item.id.slice(0, 4).toUpperCase()}
                     </div>
 
                     {isNotAvailable && (
