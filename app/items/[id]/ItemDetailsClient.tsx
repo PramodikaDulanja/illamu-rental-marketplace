@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { MapPin, Phone, MessageCircle, ShieldCheck, User, ArrowLeft, Sparkles, Tag, CheckCircle2, AlertCircle, Clock, Edit, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation'; 
 
 interface Owner {
   id?: string;
@@ -31,7 +32,7 @@ interface Item {
 export default function ItemDetails() {
   const params = useParams();
   const { id } = params;
-
+  const router = useRouter();
   const [item, setItem] = useState<Item | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState<string>('');
@@ -397,6 +398,30 @@ export default function ItemDetails() {
                     })()}
                   </div>
                 </>
+              )}
+
+
+              {/* Floating Circular Chat Button (Fixed at Bottom Right on Scroll) */}
+              {!isOwner && (
+                <div className="fixed bottom-6 right-6 z-50">
+                  <button
+                    onClick={() => {
+                      const currentUserId = localStorage.getItem('userId');
+                      if (!currentUserId) {
+                        alert('Please sign in to chat with the owner!');
+                        return;
+                      }
+                      router.push(`/chat?itemId=${item.id}&receiverId=${item.userId}`);
+                    }}
+                    className="group flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-4 sm:px-6 sm:py-3.5 rounded-full font-bold text-sm shadow-2xl hover:shadow-indigo-500/50 hover:scale-105 transition-all duration-300 border-2 border-white/20 active:scale-95"
+                    title="Chat with Owner"
+                  >
+                    <span className="flex items-center justify-center bg-white/20 p-2 rounded-full">
+                      💬
+                    </span>
+                    <span className="hidden sm:inline">Chat with Owner</span>
+                  </button>
+                </div>
               )}
 
             </div>
