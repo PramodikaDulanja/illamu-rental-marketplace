@@ -23,59 +23,80 @@ function ChatContent() {
   const [itemDetails, setItemDetails] = useState<any>(null);
   const [receiverDetails, setReceiverDetails] = useState<any>(null);
 
-  useEffect(() => {
+useEffect(() => {
     if (typeof window !== 'undefined') {
-      setCurrentUserId(localStorage.getItem('userId'));
-    }
+      const userId = localStorage.getItem('userId');
+      setCurrentUserId(userId);
 
-    if (!itemId) return;
+      if (!itemId) return;
 
-    // Fetch Item details
-    fetch(`/api/items/${itemId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) setItemDetails(data.data);
-      });
-
-    // Fetch Receiver details
-    if (receiverId) {
-      fetch(`/api/users/${receiverId}`)
+      // Fetch Item details
+      fetch(`/api/items/${itemId}`)
         .then((res) => res.json())
         .then((data) => {
-          if (data.success) setReceiverDetails(data.data);
+          if (data.success) setItemDetails(data.data);
         });
-    }
 
-    // Fetch initial messages
-    fetch(`/api/messages/${itemId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) setMessages(data.data);
-      });
+      // Fetch Receiver details
+      if (receiverId) {
+        fetch(`/api/users/${receiverId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) setReceiverDetails(data.data);
+          });
+      }
 
-    // Supabase Realtime Subscription
-    const channel = supabase
-      .channel(`chat-room-${itemId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'Message',
-          filter: `itemId=eq.${itemId}`,
-        },
-        async () => {
-          const res = await fetch(`/api/messages/${itemId}`);
-          const data = await res.json();
+      // ✅ මෙතැන දැන් සෘජුවම 'userId' (localstorage එකෙන් ගත් අගය) පාවිච්චි කරයි
+      if (itemId && userId) {
+        fetch('/api/messages/read', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            itemId: itemId, 
+            userId: userId 
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              console.log('Messages marked as read successfully');
+              window.dispatchEvent(new Event('storage'));
+            }
+          })
+          .catch((err) => console.error('Error marking messages as read:', err));
+      }
+
+      // Fetch initial messages
+      fetch(`/api/messages/${itemId}`)
+        .then((res) => res.json())
+        .then((data) => {
           if (data.success) setMessages(data.data);
-        }
-      )
-      .subscribe();
+        });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [itemId, receiverId]);
+      // Supabase Realtime Subscription
+      const channel = supabase
+        .channel(`chat-room-${itemId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'Message',
+            filter: `itemId=eq.${itemId}`,
+          },
+          async () => {
+            const res = await fetch(`/api/messages/${itemId}`);
+            const data = await res.json();
+            if (data.success) setMessages(data.data);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [itemId, receiverId]); 
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -114,14 +135,14 @@ function ChatContent() {
     <main className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto space-y-4">
         
-        {/* Back Link */}
+        {/* Back Button (Browser History Based) */}
         <div>
-          <Link
-            href={itemId ? `/items/${itemId}` : '/'}
-            className="inline-flex items-center gap-2 text-xs font-bold text-indigo-600 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm hover:bg-slate-50 transition-all"
+          <button
+            onClick={() => window.history.back()}
+            className="inline-flex items-center gap-2 text-xs font-bold text-indigo-600 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm hover:bg-slate-50 transition-all cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Item
-          </Link>
+            <ArrowLeft className="w-4 h-4" /> Back
+          </button>
         </div>
 
         {/* Chat Box Container */}

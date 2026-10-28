@@ -14,13 +14,11 @@ export async function GET(
     }
 
     const user = await prisma.user.findUnique({
-      where: { id },
-      include: {
-        items: {
-          orderBy: { createdAt: 'desc' },
-        },
-      },
-    });
+    where: { id },
+    include: {
+      items: true,
+    },
+  });
 
     if (!user) {
       return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });

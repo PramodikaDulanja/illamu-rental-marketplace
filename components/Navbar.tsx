@@ -13,35 +13,57 @@ import {
   Heart,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { MessageSquare } from 'lucide-react'; // මෙය ඉහළට import කරන්න
+
 
 export default function Navbar() {
   const [userName, setUserName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
+  const [unreadCount, setUnreadCount] = useState(0);
+  
+useEffect(() => {
     const name = localStorage.getItem('userName');
     const userId = localStorage.getItem('userId');
 
     if (name) setUserName(name);
 
-    // Fetch user profile to load the uploaded avatar URL
     if (userId) {
+      // Fetch user profile
       fetch(`/api/users/${userId}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.success && data.data) {
-            if (data.data.avatarUrl) {
-              setAvatarUrl(data.data.avatarUrl);
-            }
-            if (data.data.name) {
-              setUserName(data.data.name);
-            }
+            if (data.data.avatarUrl) setAvatarUrl(data.data.avatarUrl);
+            if (data.data.name) setUserName(data.data.name);
           }
-        })
-        .catch((err) => {
-          console.error('Error fetching user details for navbar:', err);
         });
+
+      // Fetch unread count function
+      const fetchUnreadCount = () => {
+        fetch(`/api/messages/unread-count?userId=${userId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              setUnreadCount(data.count);
+            }
+          });
+      };
+
+      fetchUnreadCount();
+
+      // 🔄 Window එක Active වන විට හෝ Storage වෙනස් වන විට Count එක නැවත පරීක්ෂා කිරීම
+      const handleStorageUpdate = () => {
+        fetchUnreadCount();
+      };
+
+      window.addEventListener('storage', handleStorageUpdate);
+      window.addEventListener('focus', handleStorageUpdate); // Window එකට ආපසු එන විට අලුත් වීම
+
+      return () => {
+        window.removeEventListener('storage', handleStorageUpdate);
+        window.removeEventListener('focus', handleStorageUpdate);
+      };
     }
   }, []);
 
@@ -85,6 +107,20 @@ export default function Navbar() {
             className="flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 shadow-sm"
           >
             <Heart className="h-5 w-5 fill-current" />
+          </Link>
+
+          
+          <Link
+            href="/inbox"
+            title="Messages Inbox"
+            className="flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-2xl sm:rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 shadow-sm relative"
+          >
+            <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                {unreadCount}
+              </span>
+            )}
           </Link>
 
           {userName ? (
@@ -131,6 +167,20 @@ export default function Navbar() {
             className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 shadow-sm"
           >
             <Heart className="h-4 w-4 fill-current" />
+          </Link>
+
+          
+          <Link
+            href="/inbox"
+            title="Messages Inbox"
+            className="flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-2xl sm:rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 shadow-sm relative"
+          >
+            <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                {unreadCount}
+              </span>
+            )}
           </Link>
 
           <button
